@@ -33,8 +33,49 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## CI/CD with GitHub Actions
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project uses GitHub Actions for continuous integration and deployment. The workflow automatically builds, tests, and deploys your application when you push to the main branch.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+### Setting up GitHub Actions
+
+1. **Add the required secrets to your GitHub repository**:
+
+   - Go to your GitHub repository
+   - Click on "Settings" > "Secrets and variables" > "Actions"
+   - Add the following secrets:
+     - `NEXT_PUBLIC_FIREBASE_API_KEY`
+     - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+     - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+     - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+     - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+     - `NEXT_PUBLIC_FIREBASE_APP_ID`
+     - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
+     - `FIREBASE_TOKEN` (Get this by running `firebase login:ci` locally)
+
+2. **Push your code to GitHub**:
+   Your application will automatically be built, tested, and deployed when you push to the main branch.
+
+## Firebase Deployment
+
+This project is configured for deployment to Firebase Hosting. 
+
+### Manual Deployment
+
+If you want to deploy manually, follow these steps:
+
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login to Firebase
+firebase login
+
+# Build and export the project
+npm run export
+
+# Deploy to Firebase
+firebase deploy
+```
+
+You can customize Firebase hosting settings in the `firebase.json` file.
