@@ -1,3 +1,5 @@
+"use client";
+
 import { emailLogin } from "@/lib/auth";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
