@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import AdminHeader from "./AdminHeader";
 
 type AdminLayoutProps = {
   children: React.ReactNode;
@@ -141,11 +142,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </li>
           </ul>
         </nav>
-      </div>
-
-      {/* Main Content */}
+      </div>      {/* Main Content */}
       <div className="flex-1 overflow-x-hidden overflow-y-auto">
         <header className="bg-white shadow">
+          <AdminHeader />
           <div className="px-4 py-6">
             <h2 className="text-2xl font-semibold text-gray-800">
               {router.pathname === "/admin"
