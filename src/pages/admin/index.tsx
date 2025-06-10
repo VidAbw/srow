@@ -1,35 +1,28 @@
 // pages/admin/index.tsx
-import { useState, useEffect } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
+import { useEffect } from "react";
+import { useRouter } from "next/router";
 import { getAllProducts, getAllCategories } from "@/lib/catalog";
-import Link from "next/link";
-import { protectAdminRoute } from "@/lib/auth";
+import { GetServerSideProps } from 'next';
+import nookies from 'nookies';
+import { firebaseAdmin } from '@/lib/firebaseAdmin';
+import { useCallback } from 'react';
 
-export default function AdminDashboard() {
-  const [productCount, setProductCount] = useState<number>(0);
-  const [categoryCount, setCategoryCount] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+export default function AdminDashboard({ adminEmail }: { adminEmail: string }) {
+  const router = useRouter();
+  const handleLogout = useCallback(async () => {
+    await fetch('/api/admin/logout', { method: 'POST' });
+    router.push('/admin/login');
+  }, [router]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
-        
-        // Fetch products and categories in parallel
-        const [products, categories] = await Promise.all([
+        await Promise.all([
           getAllProducts(),
           getAllCategories()
         ]);
-        
-        setProductCount(products.length);
-        setCategoryCount(categories.length);
-        setError(null);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
-        setError("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -37,82 +30,38 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <AdminLayout>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Catalog Summary</h3>
-          {loading ? (
-            <p>Loading...</p>
-          ) : error ? (
-            <p className="text-red-500">{error}</p>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Products:</span>
-                <span className="text-2xl font-bold">{productCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Categories:</span>
-                <span className="text-2xl font-bold">{categoryCount}</span>
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <Link 
-                  href="/admin/products"
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  View all products →
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-          <div className="space-y-2">
-            <Link 
-              href="/admin/products/new"
-              className="block py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded text-center"
-            >
-              Add New Product
-            </Link>
-            <Link 
-              href="/admin/categories/new"
-              className="block py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded text-center"
-            >
-              Add New Category
-            </Link>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Help & Resources</h3>
-          <ul className="space-y-2">
-            <li>
-              <a 
-                href="https://firebase.google.com/docs" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:text-blue-700"
-              >
-                Firebase Documentation
-              </a>
-            </li>
-            <li>
-              <a 
-                href="https://nextjs.org/docs" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:text-blue-700"
-              >
-                Next.js Documentation
-              </a>
-            </li>
-          </ul>
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Welcome, Admin!</h1>
+      <p className="mb-4 text-gray-700 dark:text-gray-300">Logged in as: <span className="font-mono">{adminEmail}</span></p>
+      <div className="flex gap-4">
+        <button onClick={() => router.push('/admin/profile')} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Profile</button>
+        <button onClick={handleLogout} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Logout</button>
       </div>
-    </AdminLayout>
+    </div>
   );
 }
 
-export const getServerSideProps = protectAdminRoute;
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const cookies = nookies.get(ctx);
+  const token = cookies.admin_token;
+  if (!token) {
+    return {
+      redirect: {
+        destination: '/admin/login',
+        permanent: false,
+      },
+    };
+  }
+  try {
+    const decoded = await firebaseAdmin.auth().verifyIdToken(token);
+    // You can add more admin checks here if needed
+    return { props: { adminEmail: decoded.email } };
+  } catch  {
+    return {
+      redirect: {
+        destination: '/admin/login',
+        permanent: false,
+      },
+    };
+  }
+};
