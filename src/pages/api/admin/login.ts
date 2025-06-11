@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Verify ID token
     const decoded = await firebaseAdmin.auth().verifyIdToken(data.idToken);
     // Check if user is admin (by email or custom claim)
-    const isAdmin = ADMIN_EMAILS.includes(decoded.email) || decoded.admin === true;
+    const isAdmin = (decoded.email && ADMIN_EMAILS.includes(decoded.email)) || decoded.admin === true;
     if (!isAdmin) {
       return res.status(403).json({ error: 'Not an admin user' });
     }
