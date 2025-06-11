@@ -18,7 +18,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   try {
     const decoded = await firebaseAdmin.auth().verifyIdToken(token);
     return { props: { adminEmail: decoded.email } };
-  } catch (e) {
+  } catch {
     return {
       redirect: {
         destination: '/admin/login',
