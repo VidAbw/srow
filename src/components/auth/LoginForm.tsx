@@ -1,6 +1,6 @@
 "use client";
 
-import { emailLogin } from "@/lib/auth";
+import { emailLogin } from "@/lib/auth.client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 

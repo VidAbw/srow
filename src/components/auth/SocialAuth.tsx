@@ -1,6 +1,6 @@
 "use client";
 
-import { googleLogin } from "@/lib/auth";
+import { googleLogin } from "@/lib/auth.client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
