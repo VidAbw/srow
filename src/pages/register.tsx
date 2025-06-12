@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { registerWithEmail } from "@/lib/auth.client";
+import { FirebaseError } from "firebase/app";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -18,8 +20,12 @@ export default function RegisterPage() {
       await registerWithEmail(email, password);
       setSuccess(true);
       setTimeout(() => router.push("/login"), 1500);
-    } catch (err: any) {
-      setError(err.message || "Registration failed");
+    } catch (err: unknown) {
+      if (err instanceof FirebaseError) {
+        setError(err.message || "Registration failed");
+      } else {
+        setError("Registration failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -56,7 +62,7 @@ export default function RegisterPage() {
         {success && <p className="mt-2 text-green-600">Registration successful! Redirecting to login...</p>}
       </form>
       <p className="mt-4 text-gray-700 dark:text-gray-300">
-        Already have an account? <a href="/login" className="text-blue-600 hover:underline">Login</a>
+        Already have an account? <Link href="/login" className="text-blue-600 hover:underline">Login</Link>
       </p>
     </div>
   );
