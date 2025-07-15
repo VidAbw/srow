@@ -102,8 +102,8 @@ export default function AdminHeader() {
           href="/admin/categories"
           className={`text-sm px-2 py-1 rounded-md ${
             router.pathname.startsWith("/admin/categories")
-              ? "bg-blue-100 text-blue-700"
-              : "text-gray-600 hover:text-gray-800"
+              ? "bg-blue-100 text-black"
+              : "text-black hover:text-gray-800"
           }`}
         >
           Categories
@@ -112,8 +112,8 @@ export default function AdminHeader() {
           href="/admin/products"
           className={`text-sm px-2 py-1 rounded-md ${
             router.pathname.startsWith("/admin/products")
-              ? "bg-blue-100 text-blue-700"
-              : "text-gray-600 hover:text-gray-800"
+              ? "bg-blue-100 text-black"
+              : "text-black hover:text-gray-800"
           }`}
         >
           Products

@@ -3,10 +3,18 @@
 import { emailLogin } from "@/lib/auth.client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Redirect if already logged in
+  if (user) {
+    router.push("/");
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

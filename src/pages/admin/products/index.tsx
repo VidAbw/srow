@@ -4,7 +4,7 @@ import { Product } from "@/types/catalog";
 import { getAllProducts, deleteProduct } from "@/lib/catalog";
 import Link from "next/link";
 import Image from "next/image";
-import { protectAdminRoute } from "@/lib/auth";
+import { protectAdminRoute } from "@/lib/auth.server";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -65,11 +65,11 @@ export default function ProductsPage() {
             <table className="min-w-full bg-white">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="py-2 px-4 border-b text-left">Image</th>
-                  <th className="py-2 px-4 border-b text-left">Name</th>
-                  <th className="py-2 px-4 border-b text-left">Price</th>
-                  <th className="py-2 px-4 border-b text-left">Stock</th>
-                  <th className="py-2 px-4 border-b text-left">Actions</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Image</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Name</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Price</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Stock</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,9 +92,9 @@ export default function ProductsPage() {
                         </div>
                       )}
                     </td>
-                    <td className="py-2 px-4 border-b">{product.name}</td>
-                    <td className="py-2 px-4 border-b">${product.price.toFixed(2)}</td>
-                    <td className="py-2 px-4 border-b">{product.stock}</td>
+                    <td className="py-2 px-4 border-b text-gray-900">{product.name}</td>
+                    <td className="py-2 px-4 border-b text-gray-900">${product.price.toFixed(2)}</td>
+                    <td className="py-2 px-4 border-b text-gray-900">{product.stock}</td>
                     <td className="py-2 px-4 border-b">
                       <div className="flex space-x-2">
                         <Link

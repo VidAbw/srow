@@ -3,6 +3,7 @@
 import { googleLogin } from "@/lib/auth.client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function SocialAuth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -60,9 +61,9 @@ export default function SocialAuth() {
       <div className="text-center mt-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Don&#39;t have an account?{" "}
-          <a href="/register" className="text-black dark:text-white font-medium hover:underline">
+          <Link href="/register" className="text-black dark:text-white font-medium hover:underline">
             Sign up
-          </a>
+          </Link>
         </p>
       </div>
     </div>

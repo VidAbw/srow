@@ -4,7 +4,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { createProduct, uploadProductImage, updateProduct, getAllCategories } from "@/lib/catalog";
 import { useRouter } from "next/router";
 import { Category } from "@/types/catalog";
-import { protectAdminRoute } from "@/lib/auth";
+import { protectAdminRoute } from "@/lib/auth.server";
 import Image from "next/image";
 
 export default function NewProductPage() {
@@ -93,6 +93,12 @@ export default function NewProductPage() {
     setLoading(true);
     setError(null);
     
+    if (formData.categoryIds.length === 0) {
+      setError("Please select at least one category for this product.");
+      setLoading(false);
+      return;
+    }
+
     try {
       // First create the product
       const productId = await createProduct({
@@ -112,11 +118,11 @@ export default function NewProductPage() {
         await updateProduct(productId, { images: imageUrls });
       }
       
+      setLoading(false);
       router.push("/admin/products");
     } catch (err) {
       console.error("Error creating product:", err);
       setError("Failed to create product");
-    } finally {
       setLoading(false);
     }
   };
@@ -124,7 +130,7 @@ export default function NewProductPage() {
   return (
     <AdminLayout>
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-6">Add New Product</h2>
+        <h2 className="text-xl font-semibold mb-6 text-gray-900">Add New Product</h2>
         
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -135,7 +141,7 @@ export default function NewProductPage() {
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Product Name</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Product Name</label>
               <input
                 type="text"
                 name="name"
@@ -143,23 +149,23 @@ export default function NewProductPage() {
                 onChange={handleInputChange}
                 onBlur={handleNameBlur}
                 required
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-white text-gray-900"
               />
             </div>
             
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Description</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Description</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded h-32"
+                className="w-full p-2 border rounded h-32 bg-white text-gray-900"
                 required
               ></textarea>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Price</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Price</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <span className="text-gray-500">$</span>
@@ -172,13 +178,13 @@ export default function NewProductPage() {
                   min="0"
                   step="0.01"
                   required
-                  className="w-full p-2 pl-7 border rounded"
+                  className="w-full p-2 pl-7 border rounded bg-white text-gray-900"
                 />
               </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Compare At Price</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Compare At Price</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <span className="text-gray-500">$</span>
@@ -190,13 +196,13 @@ export default function NewProductPage() {
                   onChange={handleInputChange}
                   min="0"
                   step="0.01"
-                  className="w-full p-2 pl-7 border rounded"
+                  className="w-full p-2 pl-7 border rounded bg-white text-gray-900"
                 />
               </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Stock Quantity</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Stock Quantity</label>
               <input
                 type="number"
                 name="stock"
@@ -204,30 +210,30 @@ export default function NewProductPage() {
                 onChange={handleInputChange}
                 min="0"
                 required
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-white text-gray-900"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">SKU</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">SKU</label>
               <input
                 type="text"
                 name="sku"
                 value={formData.sku}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-white text-gray-900"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Slug</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Slug</label>
               <input
                 type="text"
                 name="slug"
                 value={formData.slug}
                 onChange={handleInputChange}
                 required
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-white text-gray-900"
               />
             </div>
             
@@ -241,20 +247,20 @@ export default function NewProductPage() {
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="featured" className="ml-2 block text-sm font-medium">
+                <label htmlFor="featured" className="ml-2 block text-sm font-medium text-gray-700">
                   Featured Product
                 </label>
               </div>
             </div>
             
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Categories</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Categories</label>
               <select
                 multiple
                 name="categoryIds"
                 value={formData.categoryIds}
                 onChange={handleCategoryChange}
-                className="w-full p-2 border rounded h-32"
+                className="w-full p-2 border rounded h-32 bg-white text-gray-900"
               >
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>
@@ -266,7 +272,7 @@ export default function NewProductPage() {
             </div>
             
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Product Images</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Product Images</label>
               <input
                 type="file"
                 accept="image/*"
@@ -278,14 +284,16 @@ export default function NewProductPage() {
             
             {filePreviewUrls.length > 0 && (
               <div className="col-span-2">
-                <label className="block text-sm font-medium mb-1">Image Previews</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Image Previews</label>
                 <div className="grid grid-cols-3 gap-4">
                   {filePreviewUrls.map((url, index) => (
-                    <div key={index} className="relative">                      <Image
+                    <div key={index} className="relative">
+                      <Image
                         src={url}
                         alt={`Preview ${index}`}
                         width={300}
                         height={128}
+                        style={{ height: 'auto' }}
                         className="object-cover rounded"
                       />
                     </div>

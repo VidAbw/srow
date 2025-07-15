@@ -4,7 +4,7 @@ import { Category } from "@/types/catalog";
 import { getAllCategories, deleteCategory } from "@/lib/catalog";
 import Link from "next/link";
 import Image from "next/image";
-import { protectAdminRoute } from "@/lib/auth";
+import { protectAdminRoute } from "@/lib/auth.server";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -65,11 +65,11 @@ export default function CategoriesPage() {
             <table className="min-w-full bg-white">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="py-2 px-4 border-b text-left">Image</th>
-                  <th className="py-2 px-4 border-b text-left">Name</th>
-                  <th className="py-2 px-4 border-b text-left">Description</th>
-                  <th className="py-2 px-4 border-b text-left">Slug</th>
-                  <th className="py-2 px-4 border-b text-left">Actions</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Image</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Name</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Description</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Slug</th>
+                  <th className="py-2 px-4 border-b text-left text-black">Actions</th>
                 </tr>
               </thead>
               <tbody>

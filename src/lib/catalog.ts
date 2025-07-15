@@ -16,9 +16,20 @@ import { Category, Product } from "@/types/catalog";
 const CATEGORIES_COLLECTION = "categories";
 const PRODUCTS_COLLECTION = "products";
 
+// Validate Firebase connection
+const validateFirebase = () => {
+  if (!db) {
+    throw new Error("Firebase database is not initialized. Please check your environment variables.");
+  }
+  if (!storage) {
+    throw new Error("Firebase storage is not initialized. Please check your environment variables.");
+  }
+};
+
 // Category Management
 export const createCategory = async (categoryData: Omit<Category, "id" | "createdAt" | "updatedAt">): Promise<string> => {
   try {
+    validateFirebase();
     const now = Date.now();
     const newCategory = {
       ...categoryData,
@@ -36,6 +47,7 @@ export const createCategory = async (categoryData: Omit<Category, "id" | "create
 
 export const updateCategory = async (id: string, categoryData: Partial<Omit<Category, "id" | "createdAt" | "updatedAt">>): Promise<void> => {
   try {
+    validateFirebase();
     const categoryRef = doc(db, CATEGORIES_COLLECTION, id);
     await updateDoc(categoryRef, {
       ...categoryData,
@@ -49,6 +61,7 @@ export const updateCategory = async (id: string, categoryData: Partial<Omit<Cate
 
 export const deleteCategory = async (id: string): Promise<void> => {
   try {
+    validateFirebase();
     const categoryRef = doc(db, CATEGORIES_COLLECTION, id);
     await deleteDoc(categoryRef);
     
@@ -62,6 +75,7 @@ export const deleteCategory = async (id: string): Promise<void> => {
 
 export const getAllCategories = async (): Promise<Category[]> => {
   try {
+    validateFirebase();
     const querySnapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -75,6 +89,7 @@ export const getAllCategories = async (): Promise<Category[]> => {
 
 export const getCategoryById = async (id: string): Promise<Category | null> => {
   try {
+    validateFirebase();
     const categoryRef = doc(db, CATEGORIES_COLLECTION, id);
     const categorySnap = await getDoc(categoryRef);
     
@@ -95,6 +110,7 @@ export const getCategoryById = async (id: string): Promise<Category | null> => {
 // Product Management
 export const createProduct = async (productData: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<string> => {
   try {
+    validateFirebase();
     const now = Date.now();
     const newProduct = {
       ...productData,
@@ -112,6 +128,7 @@ export const createProduct = async (productData: Omit<Product, "id" | "createdAt
 
 export const updateProduct = async (id: string, productData: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>): Promise<void> => {
   try {
+    validateFirebase();
     const productRef = doc(db, PRODUCTS_COLLECTION, id);
     await updateDoc(productRef, {
       ...productData,
@@ -125,6 +142,7 @@ export const updateProduct = async (id: string, productData: Partial<Omit<Produc
 
 export const deleteProduct = async (id: string): Promise<void> => {
   try {
+    validateFirebase();
     const productRef = doc(db, PRODUCTS_COLLECTION, id);
     await deleteDoc(productRef);
   } catch (error) {
@@ -135,6 +153,7 @@ export const deleteProduct = async (id: string): Promise<void> => {
 
 export const getAllProducts = async (): Promise<Product[]> => {
   try {
+    validateFirebase();
     const querySnapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -148,6 +167,11 @@ export const getAllProducts = async (): Promise<Product[]> => {
 
 export const getProductById = async (id: string): Promise<Product | null> => {
   try {
+    validateFirebase();
+    if (!id) {
+      console.warn("getProductById called with empty id");
+      return null;
+    }
     const productRef = doc(db, PRODUCTS_COLLECTION, id);
     const productSnap = await getDoc(productRef);
     
@@ -167,6 +191,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 
 export const getProductsByCategory = async (categoryId: string): Promise<Product[]> => {
   try {
+    validateFirebase();
     const productsQuery = query(
       collection(db, PRODUCTS_COLLECTION), 
       where("categoryIds", "array-contains", categoryId)
@@ -186,6 +211,7 @@ export const getProductsByCategory = async (categoryId: string): Promise<Product
 // Image Upload
 export const uploadProductImage = async (file: File, productId: string): Promise<string> => {
   try {
+    validateFirebase();
     const fileName = `${Date.now()}_${file.name}`;
     const storageRef = ref(storage, `products/${productId}/${fileName}`);
     

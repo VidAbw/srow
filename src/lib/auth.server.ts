@@ -1,19 +1,32 @@
 import { GetServerSidePropsContext } from "next";
 import nookies from "nookies";
 import { firebaseAdmin } from "./firebaseAdmin";
-import { isAdmin } from "./auth.client";
+
+const checkIsAdmin = async (uid: string): Promise<boolean> => {
+  try {
+    const userDoc = await firebaseAdmin.firestore().collection("users").doc(uid).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      return userData?.role === "admin";
+    }
+    return false;
+  } catch (error) {
+    console.error("Error checking admin status on server:", error);
+    return false;
+  }
+};
 
 // Protect admin routes
 export const protectAdminRoute = async (context: GetServerSidePropsContext) => {
   try {
     // Get auth cookies
     const cookies = nookies.get(context);
-    const token = cookies.token;
+    const token = cookies.admin_token;
     if (!token) {
-      // Redirect to login if no token
+      // Redirect to admin login if no token
       return {
         redirect: {
-          destination: "/login?redirect=/admin",
+          destination: `/admin/login?redirect=${context.resolvedUrl}`,
           permanent: false,
         },
       };
@@ -22,7 +35,7 @@ export const protectAdminRoute = async (context: GetServerSidePropsContext) => {
     const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
     // Check if user is admin
-    const adminStatus = await isAdmin(uid);
+    const adminStatus = await checkIsAdmin(uid);
     if (!adminStatus) {
       // Redirect to home if not admin
       return {
@@ -40,10 +53,10 @@ export const protectAdminRoute = async (context: GetServerSidePropsContext) => {
     };
   } catch (error) {
     console.error("Admin route protection error:", error);
-    // Redirect to login on error
+    // Redirect to admin login on error
     return {
       redirect: {
-        destination: "/login?redirect=/admin",
+        destination: `/admin/login?redirect=${context.resolvedUrl}`,
         permanent: false,
       },
     };

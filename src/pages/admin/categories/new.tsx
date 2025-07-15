@@ -3,7 +3,7 @@ import { useState, FormEvent, ChangeEvent } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { createCategory } from "@/lib/catalog";
 import { useRouter } from "next/router";
-import { protectAdminRoute } from "@/lib/auth";
+import { protectAdminRoute } from "@/lib/auth.server";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import Image from "next/image";
@@ -60,28 +60,28 @@ export default function NewCategoryPage() {
     setError(null);
     
     try {
-      let imageUrl = undefined;
+      const categoryPayload = {
+        ...formData,
+        slug: formData.slug || generateSlug(formData.name),
+      };
       
-      // Upload image if selected
+      // Upload image if selected and add to payload
       if (selectedFile) {
         const fileName = `${Date.now()}_${selectedFile.name}`;
         const storageRef = ref(storage, `categories/${fileName}`);
         const snapshot = await uploadBytes(storageRef, selectedFile);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        const imageUrl = await getDownloadURL(snapshot.ref);
+        
+        await createCategory({ ...categoryPayload, imageUrl });
+      } else {
+        // Create category without image
+        await createCategory(categoryPayload);
       }
-      
-      // Create the category with imageUrl if available
-      await createCategory({
-        ...formData,
-        imageUrl,
-        slug: formData.slug || generateSlug(formData.name),
-      });
       
       router.push("/admin/categories");
     } catch (err) {
       console.error("Error creating category:", err);
       setError("Failed to create category");
-    } finally {
       setLoading(false);
     }
   };
@@ -89,7 +89,7 @@ export default function NewCategoryPage() {
   return (
     <AdminLayout>
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-6">Add New Category</h2>
+        <h2 className="text-xl font-semibold mb-6 text-gray-900">Add New Category</h2>
         
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -100,7 +100,7 @@ export default function NewCategoryPage() {
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Category Name</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Category Name</label>
               <input
                 type="text"
                 name="name"
@@ -108,49 +108,49 @@ export default function NewCategoryPage() {
                 onChange={handleInputChange}
                 onBlur={handleNameBlur}
                 required
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-white text-gray-900"
               />
             </div>
             
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Description</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Description</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded h-32"
+                className="w-full p-2 border rounded h-32 bg-white text-gray-900"
               ></textarea>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Slug</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Slug</label>
               <input
                 type="text"
                 name="slug"
                 value={formData.slug}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-white text-gray-900"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 The URL-friendly version of the name. Will be auto-generated if left empty.
               </p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Parent Category (Optional)</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Parent Category (Optional)</label>
               <input
                 type="text"
                 name="parentId"
                 value={formData.parentId}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-white text-gray-900"
                 placeholder="Parent category ID (if applicable)"
               />
             </div>
             
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Category Image</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Category Image <span className="text-xs text-gray-500">(optional)</span></label>
               <input
                 type="file"
                 accept="image/*"
@@ -161,11 +161,13 @@ export default function NewCategoryPage() {
             
             {filePreviewUrl && (
               <div className="col-span-2">
-                <label className="block text-sm font-medium mb-1">Image Preview</label>                <Image
+                <label className="block text-sm font-medium mb-1 text-gray-700">Image Preview</label>
+                <Image
                   src={filePreviewUrl}
                   alt="Category preview"
                   width={128}
                   height={128}
+                  style={{ height: 'auto' }}
                   className="object-cover rounded"
                 />
               </div>
