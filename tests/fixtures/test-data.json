@@ -1,0 +1,48 @@
+{
+  "users": {
+    "admin": {
+      "email": "admin@example.com",
+      "password": "adminpassword",
+      "name": "Admin User"
+    },
+    "customer": {
+      "email": "customer@example.com",
+      "password": "customer123",
+      "name": "Test Customer"
+    }
+  },
+  "products": {
+    "testProduct": {
+      "name": "Test Product",
+      "description": "A test product for testing purposes",
+      "price": 99.99,
+      "categoryId": "test-category",
+      "images": ["https://example.com/test-image.jpg"],
+      "inStock": true,
+      "slug": "test-product"
+    }
+  },
+  "categories": {
+    "testCategory": {
+      "name": "Test Category",
+      "description": "A test category for testing purposes",
+      "imageUrl": "https://example.com/category-image.jpg",
+      "slug": "test-category"
+    }
+  },
+  "orders": {
+    "testOrder": {
+      "customerName": "John Doe",
+      "customerEmail": "john@example.com",
+      "items": [
+        {
+          "productId": "test-product-id",
+          "quantity": 2,
+          "price": 99.99
+        }
+      ],
+      "total": 199.98,
+      "status": "pending"
+    }
+  }
+} 
