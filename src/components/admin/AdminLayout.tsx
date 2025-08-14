@@ -93,8 +93,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 href="/admin/categories"
                 className={`flex items-center p-3 ${
                   isActive("/admin/categories")
-                    ? "bg-gray-700 text-black"
-                    : "text-black hover:bg-gray-700"
+                    ? "bg-gray-700 text-white"
+                    : "text-gray-300 hover:bg-gray-700"
                 }`}
               >
                 <svg
@@ -119,8 +119,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 href="/admin/products"
                 className={`flex items-center p-3 ${
                   isActive("/admin/products")
-                    ? "bg-gray-700 text-black"
-                    : "text-black hover:bg-gray-700"
+                    ? "bg-gray-700 text-white"
+                    : "text-gray-300 hover:bg-gray-700"
                 }`}
               >
                 <svg
