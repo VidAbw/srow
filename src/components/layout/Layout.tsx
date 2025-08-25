@@ -2,7 +2,10 @@
 import Header from "./Header";
 import { Geist } from "next/font/google";
 import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import ConnectionStatus from "../ui/ConnectionStatus";
+import ErrorRecovery from "../ui/ErrorRecovery";
+import { attemptConnectionRecovery } from "@/lib/firebaseHealth";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -17,18 +20,61 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
+
+  // ✅ FIX: Better error handling for route cancellation
+  const handleError = useCallback((err: Error) => {
+    setLoading(false);
+    
+    // Handle specific error types
+    if (err.message.includes('Route Cancelled')) {
+      console.warn('Route cancellation detected - this is usually harmless');
+      // Don't show error for route cancellations
+      return;
+    }
+    
+    if (err.message.includes('Cross-Origin-Opener-Policy')) {
+      setError("Browser security policy is blocking navigation. Please check your browser settings.");
+      return;
+    }
+    
+    if (err.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+      setError("Navigation blocked by security software. Please check your ad blocker or security extensions.");
+      return;
+    }
+    
+    // Generic error handling
+    setError("Something went wrong. Please try again.");
+    console.error("Navigation error:", err);
+  }, []);
+
+  // ✅ FIX: Attempt connection recovery
+  const handleRecovery = useCallback(async () => {
+    if (isRecovering) return;
+    
+    setIsRecovering(true);
+    try {
+      const recovered = await attemptConnectionRecovery();
+      if (recovered) {
+        setError(null);
+        console.log('✅ Connection recovered successfully');
+      }
+    } catch (error) {
+      console.error('Recovery attempt failed:', error);
+    } finally {
+      setIsRecovering(false);
+    }
+  }, [isRecovering]);
 
   useEffect(() => {
     const handleStart = () => {
       setLoading(true);
       setError(null);
     };
+    
     const handleComplete = () => setLoading(false);
-    const handleError = (err: Error) => {
-      setLoading(false);
-      setError("Something went wrong. Please try again.");
-      console.error("Navigation error:", err);
-    };
+    
+    const handleError = (err: Error) => handleError(err);
 
     router.events.on('routeChangeStart', handleStart);
     router.events.on('routeChangeComplete', handleComplete);
@@ -39,28 +85,27 @@ export default function Layout({ children }: LayoutProps) {
       router.events.off('routeChangeComplete', handleComplete);
       router.events.off('routeChangeError', handleError);
     };
-  }, [router]);
+  }, [router, handleError]);
 
   return (
-    <div className={`${geistSans.variable} min-h-screen bg-white dark:bg-gray-900`}>
+    <div className={`${geistSans.variable} min-h-screen bg-white dark:bg-gray-900 flex flex-col`}>
+      {/* ✅ ADD: Connection status indicator */}
+      <ConnectionStatus />
+      
       {loading && (
         <div className="fixed top-0 left-0 w-full h-1 bg-blue-500 z-50">
           <div className="h-full bg-blue-600 animate-pulse"></div>
         </div>
       )}
       <Header />
-      <main>
+      <main className="flex-1">
         {error && (
           <div className="container mx-auto px-4 py-4">
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
-              {error}
-              <button 
-                onClick={() => setError(null)}
-                className="ml-2 underline hover:no-underline"
-              >
-                Dismiss
-              </button>
-            </div>
+            <ErrorRecovery 
+              error={error}
+              onRecover={handleRecovery}
+              onDismiss={() => setError(null)}
+            />
           </div>
         )}
         {children}

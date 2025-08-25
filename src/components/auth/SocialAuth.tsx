@@ -2,7 +2,8 @@
 
 import { googleLogin } from "@/lib/auth.client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+// ✅ FIX: Use next/router for Pages Router (not next/navigation)
+import { useRouter } from "next/router";
 import Link from "next/link";
 
 export default function SocialAuth() {
@@ -10,10 +11,13 @@ export default function SocialAuth() {
   const router = useRouter();
 
   const handleGoogleLogin = async () => {
+    if (isLoading) return; // Prevent double submission
+    
     try {
       setIsLoading(true);
       await googleLogin();
-      router.push("/"); // Redirect to home page after successful login
+      // ✅ FIX: Use replace instead of push to prevent back button issues
+      router.replace("/");
     } catch (error) {
       console.error("Google login failed:", error);
     } finally {
@@ -26,15 +30,34 @@ export default function SocialAuth() {
       <button 
         onClick={handleGoogleLogin} 
         disabled={isLoading}
-        className="w-full flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-transparent text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-offset-gray-900"
+        className="w-full flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-transparent text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
-          <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+          <div className="flex items-center">
+            <svg
+              className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Signing in...
+          </div>
         ) : (
-          <>
+          <div className="flex items-center">
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
@@ -53,18 +76,16 @@ export default function SocialAuth() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Sign in with Google
-          </>
+            Continue with Google
+          </div>
         )}
       </button>
       
-      <div className="text-center mt-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Don&#39;t have an account?{" "}
-          <Link href="/register" className="text-black dark:text-white font-medium hover:underline">
-            Sign up
-          </Link>
-        </p>
+      <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+        Don't have an account?{" "}
+        <Link href="/register" className="text-black dark:text-white hover:underline">
+          Sign up
+        </Link>
       </div>
     </div>
   );

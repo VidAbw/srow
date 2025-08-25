@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Security headers
+  // ✅ FIX: Security headers to resolve COOP warnings
   async headers() {
     return [
       {
@@ -61,6 +61,39 @@ const nextConfig: NextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin'
+          },
+          // ✅ FIX: Add COOP header to resolve window.closed warnings
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups'
+          },
+          // ✅ FIX: Add CORS headers for Firebase
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'unsafe-none'
+          },
+          // ✅ FIX: Allow Firebase domains
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'cross-origin'
+          }
+        ]
+      },
+      // ✅ FIX: Specific headers for API routes
+      {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*'
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS'
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization'
           }
         ]
       }
@@ -105,10 +138,60 @@ const nextConfig: NextConfig = {
     },
   }),
 
-  // Experimental features
+  // ✅ FIX: Better error handling for Next.js 15
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    // ✅ FIX: Prevent route cancellation errors
+    serverComponentsExternalPackages: ['firebase-admin'],
+    // ✅ FIX: Better client-side error handling
+    ppr: false, // Disable partial prerendering to prevent conflicts
+  },
+
+  // ✅ FIX: Webpack configuration for better error handling
+  webpack: (config, { isServer, dev }) => {
+    if (!isServer) {
+      // ✅ FIX: Better client-side error handling
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    
+    // ✅ FIX: Better error handling in development
+    if (dev) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          cacheGroups: {
+            ...config.optimization.splitChunks?.cacheGroups,
+            default: false,
+            vendors: false,
+            // Bundle vendor code together to prevent conflicts
+            vendor: {
+              name: 'vendor',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 20,
+            },
+            // Bundle common code
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              priority: 10,
+              reuseExistingChunk: true,
+              enforce: true,
+            },
+          },
+        },
+      };
+    }
+    
+    return config;
   },
 
   // TypeScript

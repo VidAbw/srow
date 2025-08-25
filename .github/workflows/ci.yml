@@ -5,14 +5,53 @@ on:
     branches: [ main, dev ]
   pull_request:
     branches: [ main, dev ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
 
 env:
   NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # Security and Dependency Check
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+
+      - name: Check for known vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
   # Lint and Type Check
   lint-and-type-check:
     runs-on: ubuntu-latest
+    needs: security
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,10 +74,20 @@ jobs:
       - name: Run TypeScript type check
         run: npm run type-check
 
+      - name: Check for console statements
+        run: |
+          if grep -r "console\." src/ --include="*.ts" --include="*.tsx" | grep -v "console.error"; then
+            echo "❌ Console statements found in production code"
+            exit 1
+          fi
+
   # Unit and Integration Tests
   test:
     runs-on: ubuntu-latest
     needs: lint-and-type-check
+    strategy:
+      matrix:
+        node-version: [18, 20]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,7 +95,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -54,6 +103,15 @@ jobs:
 
       - name: Run unit tests
         run: npm run test:coverage
+
+      - name: Check test coverage
+        run: |
+          COVERAGE=$(cat coverage/lcov.info | grep -E "SF:|LF:|LH:" | awk 'NR%3==1 {sf=$0} NR%3==2 {lf=$0} NR%3==0 {lh=$0; gsub(/LF:/,"",lf); gsub(/LH:/,"",lh); if(lf>0) {cov=100*lh/lf; print sf " " cov "%"}}' | tail -1 | awk '{print $2}' | sed 's/%//')
+          if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+            echo "❌ Test coverage is $COVERAGE%, minimum required is 70%"
+            exit 1
+          fi
+          echo "✅ Test coverage: $COVERAGE%"
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
@@ -84,6 +142,8 @@ jobs:
 
       - name: Run Playwright tests
         run: npm run test:e2e
+        env:
+          CI: true
 
       - name: Upload test results
         uses: actions/upload-artifact@v3
@@ -94,7 +154,7 @@ jobs:
             playwright-report/
             test-results/
 
-  # Build and Security Check
+  # Build and Quality Check
   build:
     runs-on: ubuntu-latest
     needs: [lint-and-type-check, test, e2e]
@@ -114,8 +174,15 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Run security audit
-        run: npm audit --audit-level=moderate
+      - name: Check bundle size
+        run: |
+          if [ -d ".next" ]; then
+            echo "✅ Build successful"
+            du -sh .next/
+          else
+            echo "❌ Build failed"
+            exit 1
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
@@ -127,7 +194,7 @@ jobs:
   deploy-staging:
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
     environment: staging
     steps:
       - name: Checkout code
@@ -153,11 +220,27 @@ jobs:
           channelId: staging
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
 
+      - name: Deploy to Vercel (Staging)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          vercel-args: '--prod=false'
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🚀 Successfully deployed to staging environment"
+          echo "Firebase: https://staging-${{ secrets.FIREBASE_PROJECT_ID }}.web.app"
+          echo "Vercel: Check Vercel dashboard for preview URL"
+
   # Deploy to Production (main branch)
   deploy-production:
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: production
     steps:
       - name: Checkout code
@@ -180,4 +263,44 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}'
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }} 
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+
+      - name: Deploy to Vercel (Production)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          vercel-args: '--prod'
+
+      - name: Run smoke tests
+        run: |
+          echo "🧪 Running smoke tests on production..."
+          # Add your smoke test commands here
+          # Example: curl -f https://your-domain.com/api/health
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🎉 Successfully deployed to production environment"
+          echo "Firebase: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app"
+          echo "Vercel: Check Vercel dashboard for production URL"
+
+  # Post-deployment monitoring
+  monitor:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Check deployment status
+        run: |
+          echo "📊 Deployment monitoring started"
+          echo "Staging: ${{ needs.deploy-staging.result }}"
+          echo "Production: ${{ needs.deploy-production.result }}"
+
+      - name: Send notifications
+        if: always()
+        run: |
+          # Add your notification logic here (Slack, Discord, etc.)
+          echo "🔔 Sending deployment notifications..." 

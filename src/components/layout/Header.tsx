@@ -10,14 +10,21 @@ export default function Header() {
   const { user } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleSignOut = async () => {
+    if (isSigningOut) return; // Prevent double submission
+    
     try {
+      setIsSigningOut(true);
       await signOut(auth);
-      router.push("/");
+      // ✅ FIX: Use replace instead of push to prevent back button issues
+      router.replace("/");
     } catch (error) {
       console.error("Error signing out:", error);
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -69,9 +76,10 @@ export default function Header() {
                     </Link>
                     <button
                       onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      disabled={isSigningOut}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Sign Out
+                      {isSigningOut ? "Signing out..." : "Sign Out"}
                     </button>
                   </div>
                 )}
